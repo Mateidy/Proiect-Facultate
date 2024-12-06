@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitorizare Sera</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>Monitorizare Sera</h1>
+    <div>
+        <p><strong>Temperatura:</strong> <span id="temp">{{ temp }}°C</span></p>
+        <p><strong>Umiditate sol:</strong><span id="humidity"> {{ humidity }}%</span></p>
+        <p><strong>Lumina sera:</strong><span id="light"> {{ light }}%</span></p>
+    </div>
+    <div>
+        <h2>Actiuni:</h2>
+        <ul id="actions">
+            {% for action in actions %}
+                <li>{{ action }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.1/socket.io.min.js"></script>
+    <script>
+        socket = io.connect('http://' + document.domain + ':' + location.port);
+
+        socket.on('update_data' , function(data){
+        console.log("Received data: ", data);
+
+        document.getElementById('temp').textContent=data.temperature+'°C';
+        document.getElementById('humidity').textContent=data.humidity+'%';
+        document.getElementById('light').textContent=data.light+'%';
+
+        var actions=[];
+        if (data.temperature>40){
+        actions.push("Ventilator pornit pentru racire");
+        }
+        if (data.humidity>50){
+        actions.push("Oprire sistem de irigare");}
+        else {actions.push ("Totul este in parametrii");
+        }
+        if (data.light<40){
+        actions.push("Pornire lumina artificiala");}
+
+        var actionList=document.getElementById('actions');
+        actionList.innerHTML= '';
+        actions.forEach(function(action){
+        var li =document.createElement('li');
+        li.textContent=action;
+        actionList.appendChild(li);});
+        });
+
+
+
+    </script>
+
+
+</body>
+</html>
