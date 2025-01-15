@@ -1,80 +1,62 @@
-from flask import Flask , render_template
-from flask_socketio import SocketIO , emit
-import random
+from flask import Flask, request, jsonify, render_template, session, redirect, url_for
+from flask_socketio import SocketIO, emit
+from werkzeug.security import generate_password_hash, check_password_hash
 import threading
-from time import sleep
+
+app = Flask(__name__)
+app.secret_key = 'supersecretkey'
+socketio = SocketIO(app)
 
 
-app=Flask(__name__)
-socketio=SocketIO(app)
+sensor_data = {
+    'temperature': None,
+    'humidity': None,
+    'light': None,
+}
 
-temperature=None
-humidity=None
-light=None
+sensor_data_lock = threading.Lock()
 
+users = {
+    "admin": generate_password_hash("admin")
+}
 
-def get_temperature():
-    return round (random.uniform(15,45),2)
+@app.route("/", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+        if username in users and check_password_hash(users[username], password):
+            session["username"] = username
+            return redirect(url_for("dashboard"))
+    return render_template("login.html")
 
-def get_humidity():
-    return round (random.uniform(20,90),2)
-
-def get_light():
-    return round(random.uniform(0,100),2)
-
-def update_sensor_data():
-    global temperature,humidity,light
-    while True:
-        temperature=get_temperature()
-        humidity=get_humidity()
-        light=get_light()
-        socketio.emit('update_data',{
-            'temperature':temperature,
-            'humidity':humidity,
-            'light':light,
-        }
-        )
-        sleep(6)
-
-sensor_thread=threading.Thread(target=update_sensor_data)
-sensor_thread.daemon=True
-sensor_thread.start()
-
-def take_actions(temp,humidity,light):
-    actions=[]
-    if temp>40:
-        actions.append("Ventilator pornit pentru racire")
-    else:
-        actions.append("Totul este in parametrii")
-    if humidity>50:
-        actions.append("Oprire sistem de irigare")
-    else:
-        actions.append("Totul este in parametrii")
-    if light<40:
-        actions.append("Pornire lumina artificiala")
-    else:
-        actions.append("Totul este in parametrii")
-
-
-    return actions
-
-@app.route("/")
+@app.route("/dashboard")
 def dashboard():
-    temp=get_temperature()
-    humidity=get_humidity()
-    light=get_light()
-    actions=take_actions(temp,humidity,light)
+    if "username" not in session:
+        return redirect(url_for("login"))
+    return render_template("dashboard.html", username=session["username"])
 
-    return render_template(
-        "index.html",
-        temp=temp,
-        humidity=humidity,
-        light=light,
-        actions=actions
-    )
+@app.route("/logout")
+def logout():
+    session.pop("username", None)
+    return redirect(url_for("login"))
+
+@app.route("/sensor_data", methods=["POST"])
+def receive_sensor_data():
+    with sensor_data_lock:
+        data = request.get_json()
+        if data and 'sensor' in data and 'value' in data:
+            sensor = data['sensor']
+            value = data['value']
+            if sensor in sensor_data:
+                sensor_data[sensor] = value
+                socketio.emit('update_data', sensor_data)
+                return jsonify({"status": "success", "message": "Data received and processed"}), 200
+        return jsonify({"status": "error", "message": "Invalid data"}), 400
 
 @socketio.on('connect')
-def start_sensor_thread():
-    socketio.start_background_task(update_sensor_data)
-if __name__=="__main__":
-    socketio.run(app,debug=True, allow_unsafe_werkzeug=True)
+def on_connect():
+    emit('update_data', sensor_data)
+
+if __name__ == "__main__":
+    socketio.run(app, debug=True, allow_unsafe_werkzeug=True)

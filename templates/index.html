@@ -4,15 +4,45 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monitorizare Sera</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <h1>Monitorizare Sera</h1>
     <div>
+        <p><strong>Utilizator:</strong> {{ username }}</p>
         <p><strong>Temperatura:</strong> <span id="temp">{{ temp }}°C</span></p>
         <p><strong>Umiditate sol:</strong><span id="humidity"> {{ humidity }}%</span></p>
         <p><strong>Lumina sera:</strong><span id="light"> {{ light }}%</span></p>
     </div>
+
+    <div>
+        <h2>Grafice:</h2>
+        <div class="charts-container">
+            <div class="chart-wrapper">
+                <canvas id="tempChart"></canvas>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="humidityChart"></canvas>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="lightChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="widget-container">
+        <div class="widget">
+            <span id="temp-widget">{{ temp }}°C</span>
+        </div>
+        <div class="widget">
+            <span id="humidity-widget">{{ humidity }}%</span>
+        </div>
+        <div class="widget">
+            <span id="light-widget">{{ light }}%</span>
+        </div>
+    </div>
+
     <div>
         <h2>Actiuni:</h2>
         <ul id="actions">
@@ -22,42 +52,120 @@
         </ul>
     </div>
 
-
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.1/socket.io.min.js"></script>
     <script>
-        socket = io.connect('http://' + document.domain + ':' + location.port);
+        const socket = io.connect('http://' + document.domain + ':' + location.port);
 
-        socket.on('update_data' , function(data){
-        console.log("Received data: ", data);
 
-        document.getElementById('temp').textContent=data.temperature+'°C';
-        document.getElementById('humidity').textContent=data.humidity+'%';
-        document.getElementById('light').textContent=data.light+'%';
+        const tempCtx = document.getElementById('tempChart').getContext('2d');
+        const humidityCtx = document.getElementById('humidityChart').getContext('2d');
+        const lightCtx = document.getElementById('lightChart').getContext('2d');
 
-        var actions=[];
-        if (data.temperature>40){
-        actions.push("Ventilator pornit pentru racire");
-        }
-        if (data.humidity>50){
-        actions.push("Oprire sistem de irigare");}
-        else {actions.push ("Totul este in parametrii");
-        }
-        if (data.light<40){
-        actions.push("Pornire lumina artificiala");}
+        const tempChart = new Chart(tempCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Temperatură (°C)',
+                    data: [],
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderWidth: 1,
+                    fill: true,
+                }]
+            },
+            options: {
+                scales: {
+                    x: { display: true },
+                    y: { beginAtZero: true }
+                }
+            }
+        });
 
-        var actionList=document.getElementById('actions');
-        actionList.innerHTML= '';
-        actions.forEach(function(action){
-        var li =document.createElement('li');
-        li.textContent=action;
-        actionList.appendChild(li);});
+        const humidityChart = new Chart(humidityCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Umiditate (%)',
+                    data: [],
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderWidth: 1,
+                    fill: true,
+                }]
+            },
+            options: {
+                scales: {
+                    x: { display: true },
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+
+        const lightChart = new Chart(lightCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Lumină (%)',
+                    data: [],
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderWidth: 1,
+                    fill: true,
+                }]
+            },
+            options: {
+                scales: {
+                    x: { display: true },
+                    y: { beginAtZero: true }
+                }
+            }
         });
 
 
+        function updateChart(chart, label, data) {
+            chart.data.labels.push(label);
+            chart.data.datasets[0].data.push(data);
+            if (chart.data.labels.length > 10) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
+            }
+            chart.update();
+        }
 
+        socket.on('update_data', function(data) {
+            document.getElementById('temp').textContent = data.temperature + '°C';
+            document.getElementById('humidity').textContent = data.humidity + '%';
+            document.getElementById('light').textContent = data.light + '%';
+
+
+            const timestamp = new Date().toLocaleTimeString();
+            updateChart(tempChart, timestamp, data.temperature);
+            updateChart(humidityChart, timestamp, data.humidity);
+            updateChart(lightChart, timestamp, data.light);
+
+
+            document.getElementById('temp-widget').textContent = data.temperature + '°C';
+            document.getElementById('humidity-widget').textContent = data.humidity + '%';
+            document.getElementById('light-widget').textContent = data.light + '%';
+
+
+            const actions = [];
+            if (data.temperature > 40) actions.push("Ventilator pornit pentru racire");
+            if (data.humidity > 50) actions.push("Oprire sistem de irigare");
+            else actions.push("Totul este în parametri");
+            if (data.light < 40) actions.push("Pornire lumină artificială");
+
+            const actionList = document.getElementById('actions');
+            actionList.innerHTML = '';
+            actions.forEach(action => {
+                const li = document.createElement('li');
+                li.textContent = action;
+                actionList.appendChild(li);
+            });
+        });
     </script>
-
-
 </body>
 </html>

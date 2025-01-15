@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.1/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>Bine ai venit, {{ username }}</h1>
+    <p>Temperatura: <span id="temp">-</span>°C</p>
+    <p>Umiditate: <span id="humidity">-</span>%</p>
+    <p>Lumină: <span id="light">-</span>%</p>
+
+    <canvas id="chart" width="400" height="200"></canvas>
+
+    <script>
+        const socket = io.connect();
+
+        const ctx = document.getElementById('chart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    { label: 'Temperatura', data: [], borderColor: 'red', fill: false },
+                    { label: 'Umiditate', data: [], borderColor: 'blue', fill: false },
+                    { label: 'Lumină', data: [], borderColor: 'green', fill: false }
+                ]
+            },
+            options: { responsive: true, scales: { x: { display: true }, y: { beginAtZero: true } } }
+        });
+
+        socket.on('update_data', function(data) {
+            const timestamp = new Date().toLocaleTimeString();
+            chart.data.labels.push(timestamp);
+            chart.data.datasets[0].data.push(data.temperature);
+            chart.data.datasets[1].data.push(data.humidity);
+            chart.data.datasets[2].data.push(data.light);
+
+            if (chart.data.labels.length > 10) {
+                chart.data.labels.shift();
+                chart.data.datasets.forEach(dataset => dataset.data.shift());
+            }
+            chart.update();
+
+            document.getElementById('temp').textContent = data.temperature;
+            document.getElementById('humidity').textContent = data.humidity;
+            document.getElementById('light').textContent = data.light;
+        });
+    </script>
+</body>
+</html>
