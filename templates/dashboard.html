@@ -6,14 +6,118 @@
     <title>Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.1/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to bottom right, #2c3e50, #4ca1af);
+            color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .dashboard {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            font-size: 2rem;
+            color: #ecf0f1;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        #chart-container {
+            width: 90%;
+            max-width: 1200px;
+            height: 500px;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .widgets {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .widget {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .widget.temperature {
+            border: 4px solid #e74c3c;
+        }
+
+        .widget.humidity {
+            border: 4px solid #3498db;
+        }
+
+        .widget.light {
+            border: 4px solid #2ecc71;
+        }
+
+        .alerts-container {
+            margin-top: 20px;
+            width: 90%;
+            max-width: 600px;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #ecf0f1;
+            font-size: 1rem;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .alert-item {
+            background-color: #ffcccc;
+            color: #cc0000;
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+    </style>
 </head>
 <body>
-    <h1>Bine ai venit, {{ username }}</h1>
-    <p>Temperatura: <span id="temp">-</span>°C</p>
-    <p>Umiditate: <span id="humidity">-</span>%</p>
-    <p>Lumină: <span id="light">-</span>%</p>
+    <div class="dashboard">
+        <h1>Bine ai venit, {{ username }}</h1>
+        <div id="chart-container">
+            <canvas id="chart"></canvas>
+        </div>
+        <div class="widgets">
+            <div class="widget temperature" id="temp-widget">-</div>
+            <div class="widget humidity" id="humidity-widget">-</div>
+            <div class="widget light" id="light-widget">-</div>
+        </div>
+        <div class="alerts-container" id="alerts-container">
 
-    <canvas id="chart" width="400" height="200"></canvas>
+        </div>
+    </div>
 
     <script>
         const socket = io.connect();
@@ -24,30 +128,114 @@
             data: {
                 labels: [],
                 datasets: [
-                    { label: 'Temperatura', data: [], borderColor: 'red', fill: false },
-                    { label: 'Umiditate', data: [], borderColor: 'blue', fill: false },
-                    { label: 'Lumină', data: [], borderColor: 'green', fill: false }
+                    {
+                        label: 'Temperatura',
+                        data: [],
+                        borderColor: 'rgba(231, 76, 60, 1)',
+                        backgroundColor: 'rgba(231, 76, 60, 0.2)',
+                        pointBackgroundColor: 'rgba(231, 76, 60, 1)',
+                        pointBorderWidth: 3,
+                        pointRadius: 5,
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true,
+                    },
+                    {
+                        label: 'Umiditate',
+                        data: [],
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                        pointBackgroundColor: 'rgba(52, 152, 219, 1)',
+                        pointBorderWidth: 3,
+                        pointRadius: 5,
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true,
+                    },
+                    {
+                        label: 'Lumină',
+                        data: [],
+                        borderColor: 'rgba(46, 204, 113, 1)',
+                        backgroundColor: 'rgba(46, 204, 113, 0.2)',
+                        pointBackgroundColor: 'rgba(46, 204, 113, 1)',
+                        pointBorderWidth: 3,
+                        pointRadius: 5,
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true,
+                    }
                 ]
             },
-            options: { responsive: true, scales: { x: { display: true }, y: { beginAtZero: true } } }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        ticks: { color: '#ecf0f1' },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: '#ecf0f1' },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#ecf0f1',
+                            font: {
+                                size: 14,
+                            },
+                        },
+                    },
+                },
+            },
         });
 
+        function updateWidget(widgetId, value) {
+            document.getElementById(widgetId).textContent = value;
+        }
+
+        function addAlert(message) {
+            const alertsContainer = document.getElementById('alerts-container');
+            const alertItem = document.createElement('div');
+            alertItem.className = 'alert-item';
+            alertItem.textContent = message;
+            alertsContainer.appendChild(alertItem);
+
+            setTimeout(() => {
+                alertsContainer.removeChild(alertItem);
+            }, 5000);
+        }
+
         socket.on('update_data', function(data) {
-            const timestamp = new Date().toLocaleTimeString();
-            chart.data.labels.push(timestamp);
-            chart.data.datasets[0].data.push(data.temperature);
-            chart.data.datasets[1].data.push(data.humidity);
-            chart.data.datasets[2].data.push(data.light);
+            if (data.timestamp) {
+                chart.data.labels.push(data.timestamp);
+                chart.data.datasets[0].data.push(data.temperature);
+                chart.data.datasets[1].data.push(data.humidity);
+                chart.data.datasets[2].data.push(data.light);
 
-            if (chart.data.labels.length > 10) {
-                chart.data.labels.shift();
-                chart.data.datasets.forEach(dataset => dataset.data.shift());
+                if (chart.data.labels.length > 10) {
+                    chart.data.labels.shift();
+                    chart.data.datasets.forEach(dataset => dataset.data.shift());
+                }
+                chart.update();
+
+                updateWidget('temp-widget', `${data.temperature}°C`);
+                updateWidget('humidity-widget', `${data.humidity}%`);
+                updateWidget('light-widget', `${data.light}%`);
+
+                if (data.light < 40) {
+                    addAlert('Pornire lampa artificială!');
+                }
+                if (data.humidity < 30) {
+                    addAlert('Pornire pompa de irigare!');
+                }
+                if (data.temperature < 20) {
+                    addAlert('Pornire sistem de încălzire!');
+                }
             }
-            chart.update();
-
-            document.getElementById('temp').textContent = data.temperature;
-            document.getElementById('humidity').textContent = data.humidity;
-            document.getElementById('light').textContent = data.light;
         });
     </script>
 </body>

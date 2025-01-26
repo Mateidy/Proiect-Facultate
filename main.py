@@ -2,23 +2,21 @@ from flask import Flask, request, jsonify, render_template, session, redirect, u
 from flask_socketio import SocketIO, emit
 from werkzeug.security import generate_password_hash, check_password_hash
 import threading
+import datetime
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
 socketio = SocketIO(app)
 
-
 sensor_data = {
     'temperature': None,
     'humidity': None,
     'light': None,
+    'timestamp': None
 }
 
 sensor_data_lock = threading.Lock()
-
-users = {
-    "admin": generate_password_hash("admin")
-}
+users = {"admin": generate_password_hash("admin")}
 
 @app.route("/", methods=["GET", "POST"])
 def login():
@@ -43,16 +41,23 @@ def logout():
 
 @app.route("/sensor_data", methods=["POST"])
 def receive_sensor_data():
-    with sensor_data_lock:
-        data = request.get_json()
-        if data and 'sensor' in data and 'value' in data:
-            sensor = data['sensor']
-            value = data['value']
-            if sensor in sensor_data:
-                sensor_data[sensor] = value
+    global sensor_data
+    data = request.get_json()
+    if data and 'sensor' in data and 'value' in data:
+        sensor = data['sensor']
+        value = data['value']
+        with sensor_data_lock:
+            sensor_data[sensor] = value
+
+            if all(sensor_data[sensor] is not None for sensor in ['temperature', 'humidity', 'light']):
+                sensor_data['timestamp'] = datetime.datetime.now().strftime("%H:%M:%S")
                 socketio.emit('update_data', sensor_data)
-                return jsonify({"status": "success", "message": "Data received and processed"}), 200
-        return jsonify({"status": "error", "message": "Invalid data"}), 400
+
+                for key in ['temperature', 'humidity', 'light']:
+                    sensor_data[key] = None
+                sensor_data['timestamp'] = None
+        return jsonify({"status": "success"}), 200
+    return jsonify({"status": "error", "message": "Invalid data"}), 400
 
 @socketio.on('connect')
 def on_connect():
