@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Istoric Date Senzori</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>📜 Istoric Date Senzori</h1>
+
+    <div class="history-container">
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>📅 Data și Ora</th>
+                    <th>🌡️ Temperatură (°C)</th>
+                    <th>💧 Umiditate (%)</th>
+                    <th>💡 Lumină (%)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in history_data %}
+                <tr>
+                    <td>{{ entry.timestamp }}</td>
+                    <td>{{ entry.temperature }}</td>
+                    <td>{{ entry.humidity }}</td>
+                    <td>{{ entry.light }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <a href="{{ url_for('dashboard') }}" class="history-button">⬅ Înapoi la Dashboard</a>
+</body>
+</html>

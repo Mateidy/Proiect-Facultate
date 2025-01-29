@@ -1,126 +1,92 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ro">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
+    <title>Monitorizare Sera</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.1/socket.io.min.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(to bottom right, #2c3e50, #4ca1af);
-            color: #f4f4f4;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-        }
-
-        .dashboard {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        h1 {
-            margin-bottom: 20px;
-            font-size: 2rem;
-            color: #ecf0f1;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-        }
-
-        #chart-container {
-            width: 90%;
-            max-width: 1200px;
-            height: 500px;
-            margin-bottom: 30px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-        }
-
-        canvas {
-            width: 100% !important;
-            height: 100% !important;
-        }
-
-        .widgets {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-        }
-
-        .widget {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
-            font-size: 1.5rem;
-            font-weight: bold;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-        }
-
-        .widget.temperature {
-            border: 4px solid #e74c3c;
-        }
-
-        .widget.humidity {
-            border: 4px solid #3498db;
-        }
-
-        .widget.light {
-            border: 4px solid #2ecc71;
-        }
-
-        .alerts-container {
-            margin-top: 20px;
-            width: 90%;
-            max-width: 600px;
-            padding: 15px;
-            border-radius: 8px;
-            background-color: rgba(255, 255, 255, 0.1);
-            color: #ecf0f1;
-            font-size: 1rem;
-            font-weight: bold;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .alert-item {
-            background-color: #ffcccc;
-            color: #cc0000;
-            padding: 10px;
-            margin-bottom: 5px;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-    </style>
 </head>
 <body>
-    <div class="dashboard">
-        <h1>Bine ai venit, {{ username }}</h1>
-        <div id="chart-container">
-            <canvas id="chart"></canvas>
-        </div>
-        <div class="widgets">
-            <div class="widget temperature" id="temp-widget">-</div>
-            <div class="widget humidity" id="humidity-widget">-</div>
-            <div class="widget light" id="light-widget">-</div>
-        </div>
-        <div class="alerts-container" id="alerts-container">
+    <h1>Bine ai venit, {{ username }}</h1>
 
+
+    <div class="mode-buttons">
+        <button id="auto-mode" class="active">Mod Automat</button>
+        <button id="manual-mode">Mod Manual</button>
+        <a href="{{ url_for('history') }}" class="history-button">Vezi Istoricul</a>
+    </div>
+
+    <div class="layout-container">
+
+        <div class="left-section">
+            <div id="chart-container">
+                <canvas id="chart"></canvas>
+            </div>
+            <div class="widget-container">
+                <div class="widget temperature"><span id="temp-widget">--°C</span></div>
+                <div class="widget humidity"><span id="humidity-widget">--%</span></div>
+                <div class="widget light"><span id="light-widget">--%</span></div>
+            </div>
+        </div>
+
+
+        <div class="middle-section">
+            <div class="controls-container" id="manual-controls" style="display: none;">
+                <h2>Controlează Valorile</h2>
+                <div class="slider-group">
+                    <label>Temperatură</label>
+                    <input type="range" id="temp-slider" min="0" max="100" value="50">
+                    <span id="temp-value">50°C</span>
+                </div>
+                <div class="slider-group">
+                    <label>Umiditate</label>
+                    <input type="range" id="humidity-slider" min="0" max="100" value="50">
+                    <span id="humidity-value">50%</span>
+                </div>
+                <div class="slider-group">
+                    <label>Lumină</label>
+                    <input type="range" id="light-slider" min="0" max="100" value="50">
+                    <span id="light-value">50%</span>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="right-section">
+            <div class="status-table">
+                <h2>Stare Sisteme</h2>
+                <table>
+                    <tr><th>Parametru</th><th>Stare</th></tr>
+                    <tr><td>Lumină</td><td id="light-status">Totul este în parametri</td></tr>
+                    <tr><td>Temperatură</td><td id="temp-status">Totul este în parametri</td></tr>
+                    <tr><td>Umiditate</td><td id="humidity-status">Totul este în parametri</td></tr>
+                </table>
+            </div>
+            <div class="alerts-container" id="alerts-container"></div>
         </div>
     </div>
 
     <script>
-        const socket = io.connect();
+        let autoMode = true;
+        let socket = io.connect('http://' + document.domain + ':' + location.port);
+
+        document.getElementById('auto-mode').addEventListener('click', function () {
+            autoMode = true;
+            this.classList.add('active');
+            document.getElementById('manual-mode').classList.remove('active');
+            document.getElementById('manual-controls').style.display = 'none';
+            console.log("Mod Automat Activat");
+        });
+
+        document.getElementById('manual-mode').addEventListener('click', function () {
+            autoMode = false;
+            this.classList.add('active');
+            document.getElementById('auto-mode').classList.remove('active');
+            document.getElementById('manual-controls').style.display = 'block';
+            console.log("Mod Manual Activat");
+        });
 
         const ctx = document.getElementById('chart').getContext('2d');
         const chart = new Chart(ctx, {
@@ -128,73 +94,47 @@
             data: {
                 labels: [],
                 datasets: [
-                    {
-                        label: 'Temperatura',
-                        data: [],
-                        borderColor: 'rgba(231, 76, 60, 1)',
-                        backgroundColor: 'rgba(231, 76, 60, 0.2)',
-                        pointBackgroundColor: 'rgba(231, 76, 60, 1)',
-                        pointBorderWidth: 3,
-                        pointRadius: 5,
-                        borderWidth: 3,
-                        tension: 0.4,
-                        fill: true,
-                    },
-                    {
-                        label: 'Umiditate',
-                        data: [],
-                        borderColor: 'rgba(52, 152, 219, 1)',
-                        backgroundColor: 'rgba(52, 152, 219, 0.2)',
-                        pointBackgroundColor: 'rgba(52, 152, 219, 1)',
-                        pointBorderWidth: 3,
-                        pointRadius: 5,
-                        borderWidth: 3,
-                        tension: 0.4,
-                        fill: true,
-                    },
-                    {
-                        label: 'Lumină',
-                        data: [],
-                        borderColor: 'rgba(46, 204, 113, 1)',
-                        backgroundColor: 'rgba(46, 204, 113, 0.2)',
-                        pointBackgroundColor: 'rgba(46, 204, 113, 1)',
-                        pointBorderWidth: 3,
-                        pointRadius: 5,
-                        borderWidth: 3,
-                        tension: 0.4,
-                        fill: true,
-                    }
+                    { label: 'Temperatura', data: [], borderColor: 'red', backgroundColor: 'rgba(255, 99, 132, 0.2)', tension: 0.4, fill: true },
+                    { label: 'Umiditate', data: [], borderColor: 'blue', backgroundColor: 'rgba(54, 162, 235, 0.2)', tension: 0.4, fill: true },
+                    { label: 'Lumină', data: [], borderColor: 'green', backgroundColor: 'rgba(75, 192, 192, 0.2)', tension: 0.4, fill: true }
                 ]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        ticks: { color: '#ecf0f1' },
-                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                    },
-                    y: {
-                        beginAtZero: true,
-                        ticks: { color: '#ecf0f1' },
-                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                    }
-                },
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: '#ecf0f1',
-                            font: {
-                                size: 14,
-                            },
-                        },
-                    },
-                },
-            },
+            options: { responsive: true, maintainAspectRatio: false }
         });
 
-        function updateWidget(widgetId, value) {
-            document.getElementById(widgetId).textContent = value;
+        function updateChart(temp, humidity, light) {
+            let timestamp = new Date().toLocaleTimeString();
+            chart.data.labels.push(timestamp);
+            chart.data.datasets[0].data.push(temp);
+            chart.data.datasets[1].data.push(humidity);
+            chart.data.datasets[2].data.push(light);
+
+            if (chart.data.labels.length > 10) {
+                chart.data.labels.shift();
+                chart.data.datasets.forEach(dataset => dataset.data.shift());
+            }
+            chart.update();
+
+            updateWidgets(temp, humidity, light);
+            updateSystemStatus(temp, humidity, light);
+
+            if (autoMode) {
+                if (light < 40) addAlert("Pornire lampa artificială!");
+                if (temp < 20) addAlert("Pornire sistem de încălzire!");
+                if (humidity < 30) addAlert("Pornire sistem de irigare!");
+            }
+        }
+
+        function updateWidgets(temp, humidity, light) {
+            document.getElementById('temp-widget').textContent = `${temp}°C`;
+            document.getElementById('humidity-widget').textContent = `${humidity}%`;
+            document.getElementById('light-widget').textContent = `${light}%`;
+        }
+
+        function updateSystemStatus(temp, humidity, light) {
+            document.getElementById('light-status').textContent = light < 40 ? "Lampa artificială este pornită" : "Totul este în parametri";
+            document.getElementById('temp-status').textContent = temp < 20 ? "Sistem de încălzire este pornit" : "Totul este în parametri";
+            document.getElementById('humidity-status').textContent = humidity < 30 ? "Sistem de irigare este pornit" : "Totul este în parametri";
         }
 
         function addAlert(message) {
@@ -203,40 +143,26 @@
             alertItem.className = 'alert-item';
             alertItem.textContent = message;
             alertsContainer.appendChild(alertItem);
-
-            setTimeout(() => {
-                alertsContainer.removeChild(alertItem);
-            }, 5000);
+            setTimeout(() => alertsContainer.removeChild(alertItem), 5000);
         }
 
+        document.querySelectorAll("input[type='range']").forEach(slider => {
+            slider.addEventListener('input', function () {
+                if (!autoMode) {
+                    let temperature = document.getElementById('temp-slider').value;
+                    let humidity = document.getElementById('humidity-slider').value;
+                    let light = document.getElementById('light-slider').value;
+                    updateChart(temperature, humidity, light);
+                }
+            });
+        });
+
         socket.on('update_data', function(data) {
-            if (data.timestamp) {
-                chart.data.labels.push(data.timestamp);
-                chart.data.datasets[0].data.push(data.temperature);
-                chart.data.datasets[1].data.push(data.humidity);
-                chart.data.datasets[2].data.push(data.light);
-
-                if (chart.data.labels.length > 10) {
-                    chart.data.labels.shift();
-                    chart.data.datasets.forEach(dataset => dataset.data.shift());
-                }
-                chart.update();
-
-                updateWidget('temp-widget', `${data.temperature}°C`);
-                updateWidget('humidity-widget', `${data.humidity}%`);
-                updateWidget('light-widget', `${data.light}%`);
-
-                if (data.light < 40) {
-                    addAlert('Pornire lampa artificială!');
-                }
-                if (data.humidity < 30) {
-                    addAlert('Pornire pompa de irigare!');
-                }
-                if (data.temperature < 20) {
-                    addAlert('Pornire sistem de încălzire!');
-                }
+            if (autoMode) {
+                updateChart(data.temperature, data.humidity, data.light);
             }
         });
+
     </script>
 </body>
 </html>
