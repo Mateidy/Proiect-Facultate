@@ -2,9 +2,3 @@ flask
 flask-socketio
 requests
 chart.js
-flask-sqlalchemy
-flask-socketio
-gunicorn
-eventlet
-werkzeug
-

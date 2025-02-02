@@ -94,40 +94,9 @@ def receive_sensor_data():
         return jsonify({"status": "success"}), 200
     return jsonify({"status": "error", "message": "Invalid data"}), 400
 
-
 @app.route("/history")
 def history():
-    data = SensorData.query.order_by(SensorData.timestamp.desc()).limit(50).all()  # Luăm ultimele 70 de înregistrări
-
-    grouped_data = [data[i:i+5] for i in range(0, len(data), 5)]
-
-    medii_temperatura = []
-    medii_umiditate = []
-    medii_lumina = []
-
-    for group in grouped_data[:7]:
-        if len(group) == 5:
-            avg_temp = round(sum(entry.temperature for entry in group) / 5, 2)
-            avg_humidity = round(sum(entry.humidity for entry in group) / 5, 2)
-            avg_light = round(sum(entry.light for entry in group) / 5, 2)
-        else:
-            avg_temp, avg_humidity, avg_light = "N/A", "N/A", "N/A"
-
-        medii_temperatura.append(avg_temp)
-        medii_umiditate.append(avg_humidity)
-        medii_lumina.append(avg_light)
-
-    if data:
-        medie_temp_totala = round(sum(entry.temperature for entry in data) / len(data), 2)
-        medie_umiditate_totala = round(sum(entry.humidity for entry in data) / len(data), 2)
-        medie_lumina_totala = round(sum(entry.light for entry in data) / len(data), 2)
-    else:
-        medie_temp_totala, medie_umiditate_totala, medie_lumina_totala = "N/A", "N/A", "N/A"
-
-    medii_temperatura.append(medie_temp_totala)
-    medii_umiditate.append(medie_umiditate_totala)
-    medii_lumina.append(medie_lumina_totala)
-
+    data = SensorData.query.order_by(SensorData.timestamp.desc()).limit(50).all()
     formatted_data = [
         {
             "timestamp": entry.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
@@ -137,12 +106,7 @@ def history():
         }
         for entry in data
     ]
-
-    return render_template("history.html",
-                           history_data=formatted_data,
-                           medii_temperatura=medii_temperatura,
-                           medii_umiditate=medii_umiditate,
-                           medii_lumina=medii_lumina)
+    return render_template("history.html", history_data=formatted_data)
 
 @socketio.on('connect')
 def on_connect():
