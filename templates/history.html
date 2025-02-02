@@ -32,6 +32,46 @@
         </table>
     </div>
 
+
+    <h2>📊 Media Valorilor pe Zile</h2>
+    <div class="history-container">
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Luni</th>
+                    <th>Marți</th>
+                    <th>Miercuri</th>
+                    <th>Joi</th>
+                    <th>Vineri</th>
+                    <th>Sâmbătă</th>
+                    <th>Duminică</th>
+                    <th>Media Totală</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>🌡️ Temperatură (°C)</td>
+                    {% for val in medii_temperatura %}
+                        <td>{% if val != "N/A" %}{{ val }}{% else %}-{% endif %}</td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td>💧 Umiditate (%)</td>
+                    {% for val in medii_umiditate %}
+                        <td>{% if val != "N/A" %}{{ val }}{% else %}-{% endif %}</td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td>💡 Lumină (%)</td>
+                    {% for val in medii_lumina %}
+                        <td>{% if val != "N/A" %}{{ val }}{% else %}-{% endif %}</td>
+                    {% endfor %}
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
     <a href="{{ url_for('dashboard') }}" class="history-button">⬅ Înapoi la Dashboard</a>
 </body>
 </html>
