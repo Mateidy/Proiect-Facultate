@@ -34,7 +34,8 @@ with app.app_context():
 
 sensor_data = {'temperature': None, 'humidity': None, 'light': None, 'timestamp': None}
 sensor_data_lock = threading.Lock()
-users = {"admin": generate_password_hash("admin")}
+username = os.getenv("USERNAME")
+password_hash = os.getenv("PASSWORD_HASH")
 auto_mode = True
 
 @app.route("/toggle_mode", methods=["POST"])
@@ -53,15 +54,22 @@ def get_mode():
     return jsonify({"auto_mode": auto_mode})
 
 
+
 @app.route("/", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
-        if username in users and check_password_hash(users[username], password):
-            session["username"] = username
+        entered_username = request.form["username"]
+        entered_password = request.form["password"]
+
+        if entered_username == username and check_password_hash(password_hash, entered_password):
+            session["username"] = entered_username
             return redirect(url_for("dashboard"))
+        else:
+            return "Invalid credentials", 401
+
     return render_template("login.html")
+
+
 
 @app.route("/dashboard")
 def dashboard():
@@ -156,6 +164,8 @@ def history():
                            medii_temperatura=medii_temperatura,
                            medii_umiditate=medii_umiditate,
                            medii_lumina=medii_lumina)
+
+
 
 @socketio.on('connect')
 def on_connect():
