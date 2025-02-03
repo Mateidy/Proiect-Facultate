@@ -2,16 +2,20 @@ from flask import Flask, request, jsonify, render_template, session, redirect, u
 from flask_sqlalchemy import SQLAlchemy
 from flask_socketio import SocketIO, emit
 from werkzeug.security import generate_password_hash, check_password_hash
+from dotenv import load_dotenv
+import os
 import threading
 import datetime
 
+load_dotenv()
 app = Flask(__name__)
-app.secret_key = 'supersecretkey'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///senzori.db'
+app.secret_key = os.getenv("SECRET_KEY")
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("SQLALCHEMY_DATABASE_URI")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 socketio = SocketIO(app)
 
+FLASK_API_URL = os.getenv("FLASK_API_URL")
 
 class SensorData(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -38,7 +42,16 @@ def toggle_mode():
     global auto_mode
     data = request.get_json()
     auto_mode = data.get("mode", True)
+
+
+    socketio.emit('mode_change', {"auto_mode": auto_mode})
+
     return jsonify({"auto_mode": auto_mode})
+
+@app.route("/get_mode", methods=["GET"])
+def get_mode():
+    return jsonify({"auto_mode": auto_mode})
+
 
 @app.route("/", methods=["GET", "POST"])
 def login():

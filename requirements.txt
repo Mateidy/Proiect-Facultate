@@ -2,3 +2,7 @@ flask
 flask-socketio
 requests
 chart.js
+flwr
+tensorflow
+numpy
+
