@@ -147,7 +147,7 @@ def receive_sensor_data():
 @app.route("/history")
 @login_required
 def history():
-    data = SensorData.query.order_by(SensorData.timestamp.desc()).limit(50).all()  # Luăm ultimele 70 de înregistrări
+    data = SensorData.query.order_by(SensorData.timestamp.desc()).limit(50).all()
 
     grouped_data = [data[i:i+5] for i in range(0, len(data), 5)]
 
