@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_socketio import SocketIO, emit
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
+from functools import wraps
 import os
 import threading
 import datetime
@@ -38,7 +39,28 @@ username = os.getenv("USERNAME")
 password_hash = os.getenv("PASSWORD_HASH")
 auto_mode = True
 
+
+app.config['SESSION_PERMANENT'] = True
+app.config['SESSION_TYPE'] = 'filesystem'
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "username" not in session:
+            return redirect(url_for("login"))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.after_request
+def add_header(response):
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
+
 @app.route("/toggle_mode", methods=["POST"])
+@login_required
 def toggle_mode():
     global auto_mode
     data = request.get_json()
@@ -50,6 +72,7 @@ def toggle_mode():
     return jsonify({"auto_mode": auto_mode})
 
 @app.route("/get_mode", methods=["GET"])
+@login_required
 def get_mode():
     return jsonify({"auto_mode": auto_mode})
 
@@ -63,6 +86,7 @@ def login():
 
         if entered_username == username and check_password_hash(password_hash, entered_password):
             session["username"] = entered_username
+            session.permanent = True
             return redirect(url_for("dashboard"))
         else:
             return "Invalid credentials", 401
@@ -71,13 +95,16 @@ def login():
 
 
 
+
 @app.route("/dashboard")
+@login_required
 def dashboard():
     if "username" not in session:
         return redirect(url_for("login"))
     return render_template("dashboard.html", username=session["username"])
 
 @app.route("/logout")
+@login_required
 def logout():
     session.pop("username", None)
     return redirect(url_for("login"))
@@ -91,6 +118,7 @@ def delete_old_data():
             db.session.commit()
 
 @app.route("/sensor_data", methods=["POST"])
+@login_required
 def receive_sensor_data():
     global sensor_data
     if not auto_mode:
@@ -117,6 +145,7 @@ def receive_sensor_data():
 
 
 @app.route("/history")
+@login_required
 def history():
     data = SensorData.query.order_by(SensorData.timestamp.desc()).limit(50).all()  # Luăm ultimele 70 de înregistrări
 

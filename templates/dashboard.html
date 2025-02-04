@@ -11,7 +11,36 @@
 
 
 <body>
+<div id="anomaly-alert" class="alert-item" style="display: none; color: red; font-weight: bold; text-align: center; margin-top: 10px;"></div>
+    <style>
+        /* Stilizare buton logout */
+        .logout-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: red;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+
+        .logout-btn:hover {
+            background-color: darkred;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Buton de Logout în colțul stânga sus -->
+    <form action="{{ url_for('logout') }}" method="GET">
+        <button type="submit" class="logout-btn">Logout</button>
+    </form>
+
     <h1>Bine ai venit, {{ username }}</h1>
+
 
 
     <div class="mode-buttons">
@@ -134,10 +163,60 @@
         }
 
         function updateSystemStatus(temp, humidity, light) {
-            document.getElementById('light-status').textContent = light < 40 ? "Lampa artificială este pornită" : "Totul este în parametri";
-            document.getElementById('temp-status').textContent = temp < 20 ? "Sistem de încălzire este pornit" : "Totul este în parametri";
-            document.getElementById('humidity-status').textContent = humidity < 30 ? "Sistem de irigare este pornit" : "Totul este în parametri";
+            let anomalyDetected = false;
+            const anomalyAlert = document.getElementById('anomaly-alert');
+
+
+            if (!autoMode) {
+                anomalyAlert.style.display = "none";
+            }
+
+
+            if (autoMode && (temp > 70 || humidity > 80 || light > 80)) {
+                anomalyDetected = true;
+                anomalyAlert.textContent = "⚠ Detectare anomalie / Senzor defect!";
+                anomalyAlert.style.display = "block";
+            } else {
+                anomalyAlert.style.display = "none";
+            }
+
+
+            if (light < 40) {
+                document.getElementById('light-status').textContent = "Lampa artificială este pornită";
+                if (autoMode) {
+                    setTimeout(() => {
+                        document.getElementById('light-status').textContent = "Totul este în parametri";
+                    }, 5000);
+                }
+            } else {
+                document.getElementById('light-status').textContent = "Totul este în parametri";
+            }
+
+
+            if (temp < 20) {
+                document.getElementById('temp-status').textContent = "Sistem de încălzire este pornit";
+                if (autoMode) {
+                    setTimeout(() => {
+                        document.getElementById('temp-status').textContent = "Totul este în parametri";
+                    }, 5000);
+                }
+            } else {
+                document.getElementById('temp-status').textContent = "Totul este în parametri";
+            }
+
+
+            if (humidity < 30) {
+                document.getElementById('humidity-status').textContent = "Sistem de irigare este pornit";
+                if (autoMode) {
+                    setTimeout(() => {
+                        document.getElementById('humidity-status').textContent = "Totul este în parametri";
+                    }, 5000);
+                }
+            } else {
+                document.getElementById('humidity-status').textContent = "Totul este în parametri";
+            }
         }
+
 
         function addAlert(message) {
             const alertsContainer = document.getElementById('alerts-container');
